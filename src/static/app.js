@@ -3,6 +3,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const activitySelect = document.getElementById("activity");
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
+  const loginButton = document.getElementById("login-button");
+  const logoutButton = document.getElementById("logout-button");
+  const authStatus = document.getElementById("auth-status");
+  let teacherCredentials = sessionStorage.getItem("teacherCredentials");
+
+  function authHeaders() {
+    return teacherCredentials
+      ? { Authorization: `Basic ${teacherCredentials}` }
+      : {};
+  }
+
+  function updateAuthUI() {
+    const loggedIn = Boolean(teacherCredentials);
+    loginButton.classList.toggle("hidden", loggedIn);
+    logoutButton.classList.toggle("hidden", !loggedIn);
+    authStatus.textContent = loggedIn
+      ? "Teacher mode is active."
+      : "Students can view activities.";
+    signupForm.classList.toggle("hidden", !loggedIn);
+  }
 
   // Function to fetch activities from API
   async function fetchActivities() {
@@ -12,6 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Clear loading message
       activitiesList.innerHTML = "";
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
@@ -30,7 +51,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 ${details.participants
                   .map(
                     (email) =>
-                      `<li><span class="participant-email">${email}</span><button class="delete-btn" data-activity="${name}" data-email="${email}">❌</button></li>`
+                      `<li><span class="participant-email">${email}</span>${
+                        teacherCredentials
+                          ? `<button class="delete-btn" data-activity="${name}" data-email="${email}">Remove</button>`
+                          : ""
+                      }</li>`
                   )
                   .join("")}
               </ul>
@@ -80,6 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
         )}/unregister?email=${encodeURIComponent(email)}`,
         {
           method: "DELETE",
+          headers: authHeaders(),
         }
       );
 
@@ -124,6 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
         )}/signup?email=${encodeURIComponent(email)}`,
         {
           method: "POST",
+          headers: authHeaders(),
         }
       );
 
@@ -155,6 +182,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  loginButton.addEventListener("click", async () => {
+    const username = window.prompt("Teacher username:");
+    if (!username) return;
+
+    const password = window.prompt("Teacher password:");
+    if (!password) return;
+
+    const encodedCredentials = btoa(`${username}:${password}`);
+    const response = await fetch("/auth/login", {
+      headers: { Authorization: `Basic ${encodedCredentials}` },
+    });
+
+    if (!response.ok) {
+      messageDiv.textContent = "Invalid teacher credentials.";
+      messageDiv.className = "error";
+      messageDiv.classList.remove("hidden");
+      return;
+    }
+
+    teacherCredentials = encodedCredentials;
+    sessionStorage.setItem("teacherCredentials", teacherCredentials);
+    updateAuthUI();
+    fetchActivities();
+  });
+
+  logoutButton.addEventListener("click", () => {
+    teacherCredentials = null;
+    sessionStorage.removeItem("teacherCredentials");
+    updateAuthUI();
+    fetchActivities();
+  });
+
   // Initialize app
+  updateAuthUI();
   fetchActivities();
 });

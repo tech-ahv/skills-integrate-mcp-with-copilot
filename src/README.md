@@ -5,7 +5,7 @@ A super simple FastAPI application that allows students to view and sign up for 
 ## Features
 
 - View all available extracurricular activities
-- Sign up for activities
+- Teachers can sign up and unregister students after logging in
 
 ## Getting Started
 
@@ -21,6 +21,8 @@ A super simple FastAPI application that allows students to view and sign up for 
    python app.py
    ```
 
+   The demo teacher account is `teacher` with password `mergington`.
+
 3. Open your browser and go to:
    - API documentation: http://localhost:8000/docs
    - Alternative documentation: http://localhost:8000/redoc
@@ -31,6 +33,9 @@ A super simple FastAPI application that allows students to view and sign up for 
 | ------ | ----------------------------------------------------------------- | ------------------------------------------------------------------- |
 | GET    | `/activities`                                                     | Get all activities with their details and current participant count |
 | POST   | `/activities/{activity_name}/signup?email=student@mergington.edu` | Sign up for an activity                                             |
+| DELETE | `/activities/{activity_name}/unregister?email=student@mergington.edu` | Unregister a student                                                |
+
+Signup and unregister requests require HTTP Basic authentication for a teacher. Viewing activities remains public.
 
 ## Data Model
 
